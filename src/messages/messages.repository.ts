@@ -1,28 +1,56 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { readFile, writeFile } from 'fs/promises';
 
 @Injectable()
 export class MessagesRepository {
+  private readonly filePath = 'messages.json';
+
+  private async readMessagesFile() {
+    const contents = await readFile(this.filePath, 'utf-8');
+    return JSON.parse(contents);
+  }
+
+  private async writeMessagesFile(messages: Record<string, any>) {
+    await writeFile(this.filePath, JSON.stringify(messages, null, 2));
+  }
+
   async findOne(id: string) {
-    const contents = await readFile('messages.json', 'utf-8');
-    const messages = JSON.parse(contents);
+    const messages = await this.readMessagesFile();
+
+    const message = messages[id];
+    if (!message) {
+      throw new NotFoundException(`Message with ID ${id} not found`);
+    }
+
+    return message;
+  }
+
+  async findAll() {
+    return await this.readMessagesFile();
+  }
+
+  async create(content: string) {
+    const messages = await this.readMessagesFile();
+
+    const id = Math.floor(Math.random() * 999).toString();
+    messages[id] = { id, content };
+
+    await this.writeMessagesFile(messages);
 
     return messages[id];
   }
-  async findAll() {
-    const contents = await readFile('messages.json', 'utf-8');
-    const messages = JSON.parse(contents);
 
-    return messages;
-  }
-  async create(content: string) {
-    const contents = await readFile('messages.json', 'utf-8');
-    const messages = JSON.parse(contents);
+  async update(id: string, content: string) {
+    const messages = await this.readMessagesFile();
 
-    const id = Math.floor(Math.random() * 999);
+    if (!messages[id]) {
+      throw new NotFoundException(`Message with ID ${id} not found`);
+    }
 
-    messages[id] = { id, content };
+    messages[id].content = content;
 
-    await writeFile('messages.json', JSON.stringify(messages));
+    await this.writeMessagesFile(messages);
+
+    return messages[id];
   }
 }
