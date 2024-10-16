@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Param,
   NotFoundException,
@@ -31,5 +32,10 @@ export class MessagesController {
       throw new NotFoundException('Message not found');
     }
     return message;
+  }
+
+  @Put('/:id')
+  updateMessage(@Param('id') id: string, @Body() body: CreateMessageDto) {
+    return this.MessagesService.update(id, body.content);
   }
 }
